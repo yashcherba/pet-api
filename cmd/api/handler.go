@@ -20,7 +20,9 @@ func NewRouter(st order.Store) http.Handler {
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, `{"status":"ok"}`)
+	if _, err := io.WriteString(w, `{"status":"ok"}`); err != nil {
+		log.Printf("write healthz response: %v", err)
+	}
 }
 
 func handleGetOrder(st order.Store) http.HandlerFunc {
@@ -33,6 +35,7 @@ func handleGetOrder(st order.Store) http.HandlerFunc {
 			return
 		}
 		if err != nil {
+			// #nosec G706 -- id is quoted with %q: newlines are escaped, log forging is not possible.
 			log.Printf("get order %q: %v", id, err)
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal"})
 			return
